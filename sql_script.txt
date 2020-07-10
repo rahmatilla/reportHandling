@@ -1,0 +1,189 @@
+DROP TABLE new_alarms;
+DROP TABLE old_alarms;
+
+CREATE TABLE IF NOT EXISTS New_alarms (
+ 
+Notification_ID	INTEGER(100)  default null,
+Alarm_Number	INTEGER(100)  default null,
+Alarm_Type	varchar(100) default null,
+Severity	varchar(100) default null,
+Alarm_Time	DATETIME not null,
+Probable_Cause	varchar(100) default null,
+Probable_Cause_Code	INTEGER(100)  default null,
+Alarm_Text	varchar(100) default null,
+Distinguished_Name	varchar(100) default null,
+Object_Class	varchar(100) default null,
+Acknowledgement_State	varchar(100) default null,
+Acknowledgement_Time	DATETIME not null,
+Acknowledgement_User	varchar(100) default null,
+Cancel_State	varchar(100) default null,
+Cancel_Time	DATETIME not null,
+Cancel_User	varchar(100) default null,
+Name	varchar(100) default null,
+Maintenance_Region_Name	varchar(100) default null,
+Site_Name	varchar(100) default null,
+Site_Priority	varchar(100) default null,
+Site_Address	varchar(100) default null,
+Extra_Information	varchar(100) default null,
+Diagnostic_Info	varchar(100) default null,
+User_Additional_Information	varchar(100) default null,
+Supplementary_Information	varchar(100) default null,
+Additional_Information_1	varchar(100) default null,
+Additional_Information_2	varchar(100) default null,
+Additional_Information_3	varchar(100) default null,
+Correlation_Indicator	varchar(100) default null,
+Notes_Indicator	varchar(100) default null,
+Trouble_Ticket_Indicator	varchar(100) default null,
+Alarm_Sound	varchar(100) default null,
+Instance_Counter	INTEGER(100)  default null,
+Consecutive_Number	INTEGER(100)  default null,
+Alarm_Insertion_Time	DATETIME not null,
+Alarm_Update_Time	DATETIME not null,
+
+PRIMARY KEY (Distinguished_Name, Alarm_Text, Alarm_Time)
+)  ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS Old_alarms (
+ 
+Notification_ID	INTEGER(100)  default null,
+Alarm_Number	INTEGER(100)  default null,
+Alarm_Type	varchar(100) default null,
+Severity	varchar(100) default null,
+Alarm_Time	DATETIME not null,
+Probable_Cause	varchar(100) default null,
+Probable_Cause_Code	INTEGER(100)  default null,
+Alarm_Text	varchar(100) default null,
+Distinguished_Name	varchar(100) default null,
+Object_Class	varchar(100) default null,
+Acknowledgement_State	varchar(100) default null,
+Acknowledgement_Time	DATETIME not null,
+Acknowledgement_User	varchar(100) default null,
+Cancel_State	varchar(100) default null,
+Cancel_Time	DATETIME not null,
+Cancel_User	varchar(100) default null,
+Name	varchar(100) default null,
+Maintenance_Region_Name	varchar(100) default null,
+Site_Name	varchar(100) default null,
+Site_Priority	varchar(100) default null,
+Site_Address	varchar(100) default null,
+Extra_Information	varchar(100) default null,
+Diagnostic_Info	varchar(100) default null,
+User_Additional_Information	varchar(100) default null,
+Supplementary_Information	varchar(100) default null,
+Additional_Information_1	varchar(100) default null,
+Additional_Information_2	varchar(100) default null,
+Additional_Information_3	varchar(100) default null,
+Correlation_Indicator	varchar(100) default null,
+Notes_Indicator	varchar(100) default null,
+Trouble_Ticket_Indicator	varchar(100) default null,
+Alarm_Sound	varchar(100) default null,
+Instance_Counter	INTEGER(100)  default null,
+Consecutive_Number	INTEGER(100)  default null,
+Alarm_Insertion_Time	DATETIME not null,
+Alarm_Update_Time	DATETIME not null,
+
+PRIMARY KEY (Distinguished_Name, Alarm_Text, Alarm_Time)
+)  ENGINE=MyISAM;
+
+LOAD DATA LOCAL INFILE  'C:/Users/ran/Desktop/otchet/new_alarms.csv'
+INTO TABLE RAN_report.new_alarms
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;
+
+LOAD DATA LOCAL INFILE  'C:/Users/ran/Desktop/otchet/old_alarms.csv'
+INTO TABLE RAN_report.old_alarms
+FIELDS TERMINATED BY ',' 
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;
+
+ALTER TABLE new_alarms
+ADD Region_name varchar(255),
+ADD BSC_name varchar(255);
+
+UPDATE new_alarms
+SET new_alarms.User_Additional_Information = new_alarms.Supplementary_Information 
+WHERE new_alarms.Object_Class = 'WBTS' 
+OR new_alarms.Object_Class = 'SBTS'
+OR new_alarms.Object_Class = 'MRBTS'
+OR new_alarms.Object_Class = 'LNCEL'
+OR new_alarms.Object_Class = 'WCEL';
+
+UPDATE new_alarms
+INNER JOIN name_base
+ON SUBSTRING_INDEX(new_alarms.Distinguished_Name,"/",3) = name_base.BSC_BCF
+SET new_alarms.Region_name = name_base.Region_name, 
+new_alarms.BSC_name = name_base.BSC_name,
+new_alarms.Site_name = name_base.Site_name;
+
+UPDATE new_alarms
+SET new_alarms.Site_name = LEFT(new_alarms.Name,6)
+WHERE new_alarms.Object_Class = 'SBTS'
+OR new_alarms.Object_Class = 'MRBTS'
+OR new_alarms.Object_Class = 'LNBTS'
+OR new_alarms.Object_Class = 'LNCEL';
+
+UPDATE new_alarms
+SET new_alarms.Region_name = 'SIRDARYA'
+WHERE LEFT(new_alarms.Site_name,2) = 'SR'
+AND (new_alarms.Object_Class = 'SBTS'
+OR new_alarms.Object_Class = 'MRBTS'
+OR new_alarms.Object_Class = 'LNBTS'
+OR new_alarms.Object_Class = 'LNCEL');
+
+UPDATE new_alarms
+SET new_alarms.Region_name = 'TASHKENT'
+WHERE LEFT(new_alarms.Site_name,2) = 'TS'
+AND (new_alarms.Object_Class = 'SBTS'
+OR new_alarms.Object_Class = 'MRBTS'
+OR new_alarms.Object_Class = 'LNBTS'
+OR new_alarms.Object_Class = 'LNCEL');
+
+SELECT 
+distinct
+new_alarms.Region_name,
+new_alarms.BSC_name,
+new_alarms.Site_name,
+new_alarms.Alarm_Time, 
+new_alarms.Alarm_Text, 
+new_alarms.Distinguished_Name, 
+new_alarms.User_Additional_Information
+
+FROM new_alarms, old_alarms 
+
+WHERE 
+new_alarms.Alarm_Text = old_alarms.Alarm_Text 
+AND new_alarms.Distinguished_Name = old_alarms.Distinguished_Name
+AND new_alarms.Object_Class <> 'TRE' 
+AND new_alarms.Object_Class <> 'FTM'
+AND new_alarms.Object_Class <> 'PCM'
+AND (new_alarms.Region_name LIKE 'TASHKENT%' OR new_alarms.Region_name LIKE 'SIRDARYA%')
+AND new_alarms.Alarm_Text NOT IN ('NE3SWS AGENT NOT RESPONDING TO REQUESTS',
+'No connection to BTS',
+'Alarm Database upload Failure.',
+'Low UL quality',
+'RADIO NETWORK RECOVERY FAILED',
+'NE3S-WS Registration failed',
+'CONFLICT BETWEEN BSS RADIO NETWORK DATABASE AND CALL CONTROL',
+'Trace Connection to NE is Lost',
+'Data Availability less or equal then pre-defied threshold',
+'NE O&M CONNECTION FAILURE',
+'BASE STATION SECURITY PROBLEM')
+AND new_alarms.User_Additional_Information NOT IN ('Module power cable connections are incorrectly configured',
+'EXxx TRX module unable to read internal temperature sensors',
+'Previously downloaded plan was overwritten',
+'Diagnostic Files collected',
+'SSH enabled',
+'Rx Uplink path not working in System Module')
+AND new_alarms.Site_name NOT IN
+(
+SELECT 
+new_alarms.Site_name
+FROM new_alarms
+WHERE
+new_alarms.Alarm_Number = 7706
+OR new_alarms.Alarm_Number = 7786
+OR new_alarms.Alarm_Number = 7750
+);
